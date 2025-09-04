@@ -1,0 +1,89 @@
+{
+  "personalAllowance": 12570,
+  "incomeTax": {
+    "englandWalesNI": [
+      { "min": 0, "max": 37700, "rate": 0.20 },
+      { "min": 37701, "max": 125140, "rate": 0.40 },
+      { "min": 125141, "max": null, "rate": 0.45 }
+    ],
+    "scotland": [
+      { "min": 0, "max": 2827, "rate": 0.19 },
+      { "min": 2828, "max": 14921, "rate": 0.20 },
+      { "min": 14922, "max": 31092, "rate": 0.21 },
+      { "min": 31093, "max": 62430, "rate": 0.42 },
+      { "min": 62431, "max": 125140, "rate": 0.45 },
+      { "min": 125141, "max": null, "rate": 0.48 }
+    ]
+  },
+  "nic": {
+    "employeePT": 12570,
+    "employeeUEL": 50270,
+    "employerST": 5000,
+    "employeeRate1": 0.08,
+    "employeeRate2": 0.02,
+    "employerRate": 0.15
+  },
+  "nmw": { "adult": 12.21, "young": 10.0, "apprentice": 7.55 },
+  "childBenefit": { "eldest": 26.05, "additional": 17.25, "period": "weekly" },
+  "universalCredit": {
+    "workAllowanceWithHousing": 411,
+    "workAllowanceNoHousing": 684,
+    "taper": 0.55,
+    "childElement": 315,
+    "standardAllowance": { "single": 292.11, "couple": 458.51 },
+    "period": "monthly"
+  },
+  "pension": {
+    "annualAllowance": 60000,
+    "mpaa": 10000,
+    "thresholdIncome": 200000,
+    "adjustedIncome": 260000,
+    "minAA": 10000
+  },
+  "hicbc": { "threshold": 60000, "ceiling": 80000 },
+  "studentLoan": {
+    "plans": {
+      "plan1": { "annualThreshold": 26065, "monthly": 2172.08, "weekly": 501.25, "rate": 0.09 },
+      "plan2": { "annualThreshold": 28470, "monthly": 2372.5, "weekly": 547.5, "rate": 0.09 },
+      "plan4": { "annualThreshold": 32745, "monthly": 2728.75, "weekly": 629.71, "rate": 0.09 },
+      "pgl":   { "annualThreshold": 21000, "monthly": 1750.0,  "weekly": 403.84, "rate": 0.06 }
+    }
+  },
+  "childcare": {
+    "workingParent": {
+      "fundedHoursPerYear": 1140,
+      "minEarnings3m": { "adult": 2539.68, "young": 2080, "apprentice": 1570.4 },
+      "incomeCapPerAdult": 100000
+    },
+    "universal15h": { "fundedHoursPerYear": 570 },
+    "nations": {
+      "england": {
+        "workingParent30h": { "fundedHoursPerYear": 1140 },
+        "universal3to4": { "fundedHoursPerYear": 570 }
+      },
+      "scotland": {
+        "universal3to4": { "fundedHoursPerYear": 1140 }
+      },
+      "wales": {
+        "workingParent30h": { "fundedHoursPerYear": 1140 },
+        "universal3to4": { "fundedHoursPerYear": 570 }
+      },
+      "northernIreland": {
+        "preSchool": { "fundedHoursPerYear": 475 }
+      }
+    },
+    "tfc": {
+      "topupRate": 0.20,
+      "monthlyCapPerChild": 166.67
+    },
+    "ucChildcare": {
+      "reimbursementRate": 0.85,
+      "monthlyCapOneChild": 1031.88,
+      "monthlyCapTwoPlus": 1768.94
+    }
+  },
+  "meta": {
+    "taxYear": "2025/26",
+    "notes": "Values reflect UK rates and thresholds for the 2025/26 tax year. Includes Student Loan thresholds for Plans 1/2/4 and PGL. Childcare section includes working-parent offer, universal entitlements, TFC and UC childcare caps."
+  }
+}
