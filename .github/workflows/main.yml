@@ -18,10 +18,18 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
-      - name: Build
+      - name: Set BASE_PATH for Vite
         run: |
-          echo "BASE_PATH=/${{ github.event.repository.name }}/" >> $GITHUB_ENV
-          npm run build
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          if [[ "$REPO_NAME" == *".github.io" ]]; then
+            echo "BASE_PATH=/" >> $GITHUB_ENV
+          else
+            echo "BASE_PATH=/$REPO_NAME/" >> $GITHUB_ENV
+          fi
+      - name: Show BASE_PATH
+        run: echo "BASE_PATH=$BASE_PATH"
+      - name: Build
+        run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -34,3 +42,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
