@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import UKPensionCalculator from './components/UKPensionCalculator';
 import { PiggyBank, ShieldAlert } from 'lucide-react';
 import IntroPanel from './components/IntroPanel';
 
 export default function App() {
+  const repoUrl = useMemo(() => {
+    // Allow override via env (e.g., VITE_GITHUB_REPO_URL)
+    const envUrl = (import.meta as any)?.env?.VITE_GITHUB_REPO_URL as string | undefined;
+    if (envUrl) return envUrl;
+
+    const { hostname, pathname } = window.location;
+    if (hostname.endsWith('github.io')) {
+      const user = hostname.split('.')[0];
+      const seg = pathname.split('/').filter(Boolean)[0];
+      if (user && seg) return `https://github.com/${user}/${seg}`;
+      if (user) return `https://github.com/${user}`;
+    }
+    // Fallback: update to your repo if desired
+    return 'https://github.com/';
+  }, []);
+
   return (
     <div className="min-h-screen gradient-aurora text-white relative bg-techgrid">
       {/* Cyberpunk scanline overlay */}
@@ -28,7 +44,7 @@ export default function App() {
           </div>
           <a
             className="btn btn-sm btn-primary btn-outline"
-            href="https://github.com/"
+            href={repoUrl}
             target="_blank"
             rel="noreferrer"
           >
