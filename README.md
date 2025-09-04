@@ -1,6 +1,6 @@
 # Salary Sacrifice Playground 💸⚡
 
-Keep more of what you earn — legally — by steering taxable salary into things you actually keep: pensions, EVs, bikes, childcare and entitlements. Apologies to the Chancellor.
+A completely hypothetical, not advice Salary Sacrifice calculator - a philosophical experiement in the value prop of keeping more of what you earn — legally — by steering taxable salary into things you actually keep: pensions, EVs, bikes, childcare and entitlements. Apologies to the Chancellor.
 
 - Schemes: Pensions • Electric Vehicles (EV) • Cycle to Work • Child Benefit • Free Childcare • Universal Credit
 - Tech: React 18 + TypeScript + Vite
