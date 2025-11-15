@@ -455,8 +455,23 @@ export default function UKPensionCalculator() {
 
     // Calculate additional relief claimable via self-assessment
     // For higher/additional rate taxpayers, they can claim back extra relief
-    const marginalRateAfter = mtrEmployment;
-    const additionalReliefRate = Math.max(0, marginalRateAfter - 20) / 100;
+    // This should be based on the marginal INCOME TAX rate, not the effective MTR
+    const getMarginalIncomeTaxRate = (totalIncome: number, personalAllowance: number) => {
+      const taxBands = region === 'scotland' ? getTaxBands('scotland') : getTaxBands('englandWalesNI');
+      const incomeAfterPA = Math.max(0, totalIncome - personalAllowance);
+      
+      // Find which band we're in
+      for (let i = taxBands.length - 1; i >= 0; i--) {
+        const band = taxBands[i];
+        if (incomeAfterPA > band.min) {
+          return band.rate * 100; // Convert to percentage
+        }
+      }
+      return 0; // Should never reach here
+    };
+    
+    const marginalIncomeTaxRate = getMarginalIncomeTaxRate(scenarios[1].totalIncome, scenarios[1].personalAllowance);
+    const additionalReliefRate = Math.max(0, marginalIncomeTaxRate - 20) / 100;
     const additionalReliefPensions = otherPensionsGross * additionalReliefRate;
     const additionalReliefGiftAid = giftAidGross * additionalReliefRate;
     const totalAdditionalRelief = additionalReliefPensions + additionalReliefGiftAid;
@@ -720,13 +735,10 @@ export default function UKPensionCalculator() {
         'Income Tax': Math.round(results.scenarios[0].incomeTax),
         'Employee NIC': Math.round(results.scenarios[0].employeeNIC),
         'Student Loan': Math.round(results.scenarios[0].studentLoan || 0),
-        'Pension Sacrifice': 0,
-        'Other Pensions (net)': 0,
-        'Gift Aid (net)': 0,
+        'Pension (net)': 0,
         'EV (net)': 0,
         'Cycle (net)': 0,
-        'Take-Home from PAYE': Math.round(results.scenarios[0].takeHome),
-        'Additional Relief': 0,
+        'Cash (excl CB/UC)': Math.round(results.scenarios[0].takeHome),
         'Child Benefit': Math.round(results.scenarios[0].netChildBenefit || 0),
         'Universal Credit': Math.round(results.universalCredit?.before || 0),
         'Free childcare': Math.round(results.childcare.before.freeChildcareAnnual || 0),
@@ -736,13 +748,10 @@ export default function UKPensionCalculator() {
         'Income Tax': Math.round(results.scenarios[1].incomeTax),
         'Employee NIC': Math.round(results.scenarios[1].employeeNIC),
         'Student Loan': Math.round(results.scenarios[1].studentLoan || 0),
-        'Pension Sacrifice': Math.round(results.sacrifice.amount),
-        'Other Pensions (net)': Math.round(otherPensionsNet),
-        'Gift Aid (net)': Math.round(giftAidNet),
+        'Pension (net)': Math.round(results.sacrifice.amount + otherPensionsNet + giftAidNet),
         'EV (net)': Math.round(results.schemes?.ev?.enabled ? results.schemes.ev.net : 0),
         'Cycle (net)': Math.round(results.schemes?.cycle?.enabled ? results.schemes.cycle.net : 0),
-        'Take-Home from PAYE': Math.round(results.scenarios[1].takeHome),
-        'Additional Relief': Math.round(totalAdditionalRelief),
+        'Cash (excl CB/UC)': Math.round(results.scenarios[1].takeHome - otherPensionsNet - giftAidNet + totalAdditionalRelief),
         'Child Benefit': Math.round(results.scenarios[1].netChildBenefit || 0),
         'Universal Credit': Math.round(results.universalCredit?.after || 0),
         'Free childcare': Math.round(results.childcare.after.freeChildcareAnnual || 0),
@@ -817,6 +826,23 @@ export default function UKPensionCalculator() {
         label: 'Additional relief (claimable via SA)',
         before: 0,
         after: totalAdditionalRelief  // Positive because it comes back to you
+      });
+    }
+
+    // Add EV and Cycle schemes if enabled
+    if (results.schemes?.ev?.enabled && results.schemes.ev.net > 0) {
+      rows.push({
+        label: 'EV Scheme (net cost)',
+        before: 0,
+        after: -results.schemes.ev.net  // Negative because it's a salary reduction
+      });
+    }
+
+    if (results.schemes?.cycle?.enabled && results.schemes.cycle.net > 0) {
+      rows.push({
+        label: 'Cycle to Work (net cost)',
+        before: 0,
+        after: -results.schemes.cycle.net  // Negative because it's a salary reduction
       });
     }
 
