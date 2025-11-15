@@ -453,14 +453,27 @@ export default function UKPensionCalculator() {
     const mtrEmployment = 100 * (1 - (resourcesIfSalaryUp - baselineResources) / delta);
     const mtrNonSac = 100 * (1 - (resourcesIfNonSacUp - baselineResources) / delta);
 
+    // Calculate additional relief claimable via self-assessment
+    // For higher/additional rate taxpayers, they can claim back extra relief
+    const marginalRateAfter = mtrEmployment;
+    const additionalReliefRate = Math.max(0, marginalRateAfter - 20) / 100;
+    const additionalReliefPensions = otherPensionsGross * additionalReliefRate;
+    const additionalReliefGiftAid = giftAidGross * additionalReliefRate;
+    const totalAdditionalRelief = additionalReliefPensions + additionalReliefGiftAid;
+
     // Net value panel figures
     const beforeCash = scenarios[0].totalTakeHome + (universalCreditEnabled ? ucBefore : 0);
     const afterCash = scenarios[1].totalTakeHome + (universalCreditEnabled ? ucAfter : 0);
     const beforeFreeChildcare = childcareBefore.freeChildcareAnnual || 0;
     const afterFreeChildcare = childcareAfter.freeChildcareAnnual || 0;
-    const pensionValue = totalPensionFunding;
+
+    // Pension value includes salary sacrifice + other pensions
+    const pensionValueSalarySac = totalPensionFunding;
+    const pensionValueOther = otherPensionsGross;
+    const pensionValueTotal = pensionValueSalarySac + pensionValueOther;
+
     const totalBefore = beforeCash + beforeFreeChildcare;
-    const totalAfter = afterCash + afterFreeChildcare + pensionValue;
+    const totalAfter = afterCash + afterFreeChildcare + pensionValueTotal;
 
     // New: detailed Total Net Value categories
     const p11dValue = parseNumber(benefitsInKind);
@@ -472,14 +485,22 @@ export default function UKPensionCalculator() {
       + scenarios[0].netChildBenefit
       + (ucBefore)
       + beforeFreeChildcare;
-    const totalNetAfter = (scenarios[1].takeHome)
-      + pensionValue
+
+    // Pocket resources AFTER = take-home - net paid + additional relief claimable
+    const pocketResourcesAfter = scenarios[1].takeHome
+      - parseNumber(otherPensions) // net paid for other pensions
+      - parseNumber(giftAid) // net donated for gift aid
+      + totalAdditionalRelief; // additional relief claimable via SA
+
+    const totalNetAfter = pocketResourcesAfter
+      + pensionValueTotal // all pension values (salary sac + other pensions)
       + p11dValue
       + evGross
       + cycleGross
       + scenarios[1].netChildBenefit
       + (ucAfter)
-      + afterFreeChildcare;
+      + afterFreeChildcare
+      + parseNumber(giftAid); // charity receives this
 
     setResults({
       scenarios,
@@ -494,10 +515,12 @@ export default function UKPensionCalculator() {
       otherPensions: {
         net: parseNumber(otherPensions),
         gross: otherPensionsGross,
+        additionalRelief: additionalReliefPensions,
       },
       giftAid: {
         net: parseNumber(giftAid),
         gross: giftAidGross,
+        additionalRelief: additionalReliefGiftAid,
       },
       schemes: {
         ev: { enabled: evEnabled, gross: evGross, net: evNet, employerPassthrough: evPassthrough },
@@ -530,13 +553,18 @@ export default function UKPensionCalculator() {
       // Back-compatible summary
       netValue: {
         before: { cash: beforeCash, freeChildcare: beforeFreeChildcare },
-        after: { cash: afterCash, freeChildcare: afterFreeChildcare, pension: pensionValue },
+        after: { cash: afterCash, freeChildcare: afterFreeChildcare, pension: pensionValueTotal },
         totals: { before: totalBefore, after: totalAfter, delta: totalAfter - totalBefore },
         // New detailed view
         details: {
           before: {
             cash: scenarios[0].takeHome,
             pension: 0,
+            otherPensionsNet: 0,
+            otherPensionsGross: 0,
+            giftAidNet: 0,
+            giftAidGross: 0,
+            additionalRelief: 0,
             p11d: p11dValue,
             ev: 0,
             cycle: 0,
@@ -545,8 +573,13 @@ export default function UKPensionCalculator() {
             uc: ucBefore,
           },
           after: {
-            cash: scenarios[1].takeHome,
-            pension: pensionValue,
+            cash: pocketResourcesAfter, // This is take-home - net paid + additional relief
+            pension: pensionValueSalarySac,
+            otherPensionsNet: parseNumber(otherPensions),
+            otherPensionsGross: otherPensionsGross,
+            giftAidNet: parseNumber(giftAid),
+            giftAidGross: giftAidGross,
+            additionalRelief: totalAdditionalRelief,
             p11d: p11dValue,
             ev: evGross,
             cycle: cycleGross,
@@ -594,11 +627,18 @@ export default function UKPensionCalculator() {
 
   const getPensionPieData = () => {
     if (!results) return [] as any[];
-    return [
+    const items = [
       { name: 'Your Sacrifice', value: results.sacrifice.amount, color: '#3b82f6' },
       { name: 'Employer Base', value: results.sacrifice.employerBase, color: '#06b6d4' },
       { name: 'NI Passthrough', value: results.sacrifice.employerPassthrough, color: '#10b981' },
-    ].filter((i) => i.value > 0);
+    ];
+
+    // Add other pensions to the pie chart (gross amount goes into pension)
+    if (results.otherPensions && results.otherPensions.gross > 0) {
+      items.push({ name: 'Other Pensions', value: results.otherPensions.gross, color: '#f59e0b' });
+    }
+
+    return items.filter((i) => i.value > 0);
   };
 
   const savingsPct = useMemo(() => {
@@ -703,16 +743,31 @@ export default function UKPensionCalculator() {
   const tnvDetails = useMemo(() => {
     if (!results) return [] as { label: string; before: number; after: number }[];
     const d = results.netValue.details;
-    return [
+    const rows = [
       { label: 'Cash in pocket', before: d.before.cash, after: d.after.cash },
-      { label: 'Cash into pension', before: d.before.pension, after: d.after.pension },
+      { label: 'Salary Sacrifice Pension', before: d.before.pension, after: d.after.pension },
+    ];
+
+    // Add other pensions gross value (what goes into pension)
+    if (d.after.otherPensionsGross > 0) {
+      rows.push({ label: 'Other Pensions (gross)', before: 0, after: d.after.otherPensionsGross });
+    }
+
+    // Add gift aid gross value (what charity receives)
+    if (d.after.giftAidGross > 0) {
+      rows.push({ label: 'Gift Aid (to charity)', before: 0, after: d.after.giftAidGross });
+    }
+
+    rows.push(
       { label: 'P11D benefits', before: d.before.p11d, after: d.after.p11d },
       { label: 'EV', before: d.before.ev, after: d.after.ev },
       { label: 'Cycle', before: d.before.cycle, after: d.after.cycle },
       { label: 'Child Benefit', before: d.before.childBenefit, after: d.after.childBenefit },
       { label: 'Free childcare', before: d.before.freeChildcare, after: d.after.freeChildcare },
       { label: 'Universal Credit', before: d.before.uc, after: d.after.uc },
-    ];
+    );
+
+    return rows;
   }, [results]);
 
   // Build rows for Detailed Breakdown panel
@@ -992,14 +1047,16 @@ export default function UKPensionCalculator() {
                 {/* Scheme Impact bar (kept inline for now) */}
                 <div className="glass rounded-xl overflow-hidden neon-secondary">
                   <div className="px-5 py-3 border-b border-white/10">
-                    <h3 className="font-semibold text-base">Scheme Impact (Annual)</h3>
+                    <h3 className="font-semibold text-base">Pocket Impact (Annual)</h3>
                   </div>
                   <div className="p-5 pie-stable">
                     {(() => {
                       const items = [
-                        { label: 'Pension (net deduction)', value: results.sacrifice.amount, color: 'bg-primary' },
-                        ...(results.schemes?.ev?.enabled ? [{ label: 'EV (net deduction)', value: results.schemes.ev.net, color: 'bg-secondary' }] : []),
-                        ...(results.schemes?.cycle?.enabled ? [{ label: 'Cycle (net deduction)', value: results.schemes.cycle.net, color: 'bg-accent' }] : []),
+                        { label: 'Pension Sacrifice (net)', value: results.sacrifice.amount, color: 'bg-primary' },
+                        ...(results.schemes?.ev?.enabled ? [{ label: 'EV (net)', value: results.schemes.ev.net, color: 'bg-secondary' }] : []),
+                        ...(results.schemes?.cycle?.enabled ? [{ label: 'Cycle (net)', value: results.schemes.cycle.net, color: 'bg-accent' }] : []),
+                        ...(results.otherPensions && results.otherPensions.net > 0 ? [{ label: 'Other Pensions (net paid)', value: results.otherPensions.net, color: 'bg-warning' }] : []),
+                        ...(results.giftAid && results.giftAid.net > 0 ? [{ label: 'Gift Aid (net donated)', value: results.giftAid.net, color: 'bg-info' }] : []),
                       ];
                       const total = items.reduce((s, i) => s + i.value, 0) || 1;
                       return (
