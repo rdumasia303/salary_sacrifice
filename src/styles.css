@@ -112,3 +112,46 @@ html, body, #root {
 }
 .corner-accent::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
 .corner-accent::after { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+/* Safari animation optimizations */
+@supports (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px)) {
+  /* Force GPU acceleration for animated elements in Safari */
+  .animate-aurora,
+  .animate-glowpulse,
+  .animate-fadeIn {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Optimize will-change for animated properties */
+  .animate-aurora {
+    will-change: opacity;
+  }
+
+  .animate-glowpulse {
+    will-change: box-shadow;
+  }
+
+  .animate-fadeIn {
+    will-change: opacity;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-aurora,
+  .animate-glowpulse,
+  .animate-fadeIn {
+    animation: none !important;
+  }
+}

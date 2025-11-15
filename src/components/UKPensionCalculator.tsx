@@ -87,6 +87,7 @@ export default function UKPensionCalculator() {
 
   // Other pensions & limits
   const [otherPensions, setOtherPensions] = useState<string>('');
+  const [giftAid, setGiftAid] = useState<string>('');
   const [mpaaTriggered, setMpaaTriggered] = useState(false);
   const [carryForwardAllowance, setCarryForwardAllowance] = useState<string>('');
 
@@ -258,6 +259,10 @@ export default function UKPensionCalculator() {
     // Pension sacrifice
     const pensionSacrifice = calculateSacrificeAmount();
 
+    // Gross up other pensions and gift aid (net payment * 1.25 = gross with basic rate relief)
+    const otherPensionsGross = parseNumber(otherPensions) * 1.25;
+    const giftAidGross = parseNumber(giftAid) * 1.25;
+
     // EV & Cycle gross amounts
     const evGross = evEnabled ? parseNumber(evMonthlyCost) * 12 : 0;
     const cycleGross = cycleEnabled ? parseNumber(cycleAnnualCost) : 0;
@@ -290,7 +295,8 @@ export default function UKPensionCalculator() {
       // Include additional non-sacrificeable PAYE income for tax/NI, not for NMW
       const earnings = employmentEarnings + parseNumber(additionalPAYEIncome);
       const totalIncome = earnings + parseNumber(benefitsInKind);
-      const ani = totalIncome;
+      // Adjusted Net Income is reduced by gross pension contributions and gift aid
+      const ani = totalIncome - otherPensionsGross - giftAidGross;
       const personalAllowance = calculatePersonalAllowance(ani);
       const incomeTax = calculateIncomeTax(totalIncome, personalAllowance);
       const employeeNIC = calculateEmployeeNIC(earnings);
@@ -352,7 +358,8 @@ export default function UKPensionCalculator() {
     }
 
     // Pension AA (strictly exceed; include epsilon). Include carry-forward
-    const totalPensionContribs = totalPensionFunding + parseNumber(otherPensions);
+    // Use grossed-up other pensions for allowance check
+    const totalPensionContribs = totalPensionFunding + otherPensionsGross;
     const annualAllowance = mpaaTriggered ? TAX_DATA.pension.mpaa : scenarios[1].taperedAA;
     const carryForward = parseNumber(carryForwardAllowance);
     const allowanceWithCarry = annualAllowance + carryForward;
@@ -554,11 +561,11 @@ export default function UKPensionCalculator() {
   }, [region, annualSalary, sacrificeType, sacrificeAmount, sacrificePercent, targetAmount, employerNIPassthrough,
       employerContribType, employerContribPercent, employerContribFixed, benefitsInKind,
       numberOfChildren, customChildBenefit, universalCreditEnabled, hasPartner, partnerNetSalary,
-      wantsHousingElement, housingAllowance, householdCapital, otherPensions, mpaaTriggered,
+      wantsHousingElement, housingAllowance, householdCapital, otherPensions, giftAid, mpaaTriggered,
       payFrequency, contractualHours, ageGroup, applyToBonus, bonusAmount,
       evEnabled, evMonthlyCost, evNIPassthrough, cycleEnabled, cycleAnnualCost, cycleNIPassthrough,
       additionalPAYEIncome, studentUGPlan, hasPGL,
-      childrenAtRiskCount, avgHourlyRate]);
+      childrenAtRiskCount, avgHourlyRate, carryForwardAllowance]);
 
   // Derived flags restored for P11D-related messaging and HICBC banner
   const p11dCausesPA = useMemo(() => {
@@ -822,6 +829,8 @@ export default function UKPensionCalculator() {
               setAdditionalPAYEIncome={setAdditionalPAYEIncome}
               otherPensions={otherPensions}
               setOtherPensions={setOtherPensions}
+              giftAid={giftAid}
+              setGiftAid={setGiftAid}
               mpaaTriggered={mpaaTriggered}
               setMpaaTriggered={setMpaaTriggered}
             />
