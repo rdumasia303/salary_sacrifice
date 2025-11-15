@@ -628,14 +628,14 @@ export default function UKPensionCalculator() {
   const getPensionPieData = () => {
     if (!results) return [] as any[];
     const items = [
-      { name: 'Your Sacrifice', value: results.sacrifice.amount, color: '#3b82f6' },
-      { name: 'Employer Base', value: results.sacrifice.employerBase, color: '#06b6d4' },
-      { name: 'NI Passthrough', value: results.sacrifice.employerPassthrough, color: '#10b981' },
+      { name: 'Your Sacrifice', value: results.sacrifice.amount, color: '#3b82f6' }, // blue
+      { name: 'Employer Base', value: results.sacrifice.employerBase, color: '#06b6d4' }, // cyan
+      { name: 'NI Passthrough', value: results.sacrifice.employerPassthrough, color: '#10b981' }, // green
     ];
 
     // Add other pensions to the pie chart (gross amount goes into pension)
     if (results.otherPensions && results.otherPensions.gross > 0) {
-      items.push({ name: 'Other Pensions', value: results.otherPensions.gross, color: '#f59e0b' });
+      items.push({ name: 'Other Pensions', value: results.otherPensions.gross, color: '#a855f7' }); // purple - more distinct
     }
 
     return items.filter((i) => i.value > 0);
@@ -709,16 +709,24 @@ export default function UKPensionCalculator() {
   // Before/After bar data
   const beforeAfterBar = useMemo(() => {
     if (!results) return [] as any[];
+
+    const otherPensionsNet = results.otherPensions?.net || 0;
+    const giftAidNet = results.giftAid?.net || 0;
+    const totalAdditionalRelief = (results.otherPensions?.additionalRelief || 0) + (results.giftAid?.additionalRelief || 0);
+
     return [
       {
         name: 'Before',
         'Income Tax': Math.round(results.scenarios[0].incomeTax),
         'Employee NIC': Math.round(results.scenarios[0].employeeNIC),
         'Student Loan': Math.round(results.scenarios[0].studentLoan || 0),
-        'Pension (net)': 0,
+        'Pension Sacrifice': 0,
+        'Other Pensions (net)': 0,
+        'Gift Aid (net)': 0,
         'EV (net)': 0,
         'Cycle (net)': 0,
-        'Cash (excl CB/UC)': Math.round(results.scenarios[0].takeHome),
+        'Take-Home from PAYE': Math.round(results.scenarios[0].takeHome),
+        'Additional Relief': 0,
         'Child Benefit': Math.round(results.scenarios[0].netChildBenefit || 0),
         'Universal Credit': Math.round(results.universalCredit?.before || 0),
         'Free childcare': Math.round(results.childcare.before.freeChildcareAnnual || 0),
@@ -728,10 +736,13 @@ export default function UKPensionCalculator() {
         'Income Tax': Math.round(results.scenarios[1].incomeTax),
         'Employee NIC': Math.round(results.scenarios[1].employeeNIC),
         'Student Loan': Math.round(results.scenarios[1].studentLoan || 0),
-        'Pension (net)': Math.round(results.sacrifice.amount),
+        'Pension Sacrifice': Math.round(results.sacrifice.amount),
+        'Other Pensions (net)': Math.round(otherPensionsNet),
+        'Gift Aid (net)': Math.round(giftAidNet),
         'EV (net)': Math.round(results.schemes?.ev?.enabled ? results.schemes.ev.net : 0),
         'Cycle (net)': Math.round(results.schemes?.cycle?.enabled ? results.schemes.cycle.net : 0),
-        'Cash (excl CB/UC)': Math.round(results.scenarios[1].takeHome),
+        'Take-Home from PAYE': Math.round(results.scenarios[1].takeHome),
+        'Additional Relief': Math.round(totalAdditionalRelief),
         'Child Benefit': Math.round(results.scenarios[1].netChildBenefit || 0),
         'Universal Credit': Math.round(results.universalCredit?.after || 0),
         'Free childcare': Math.round(results.childcare.after.freeChildcareAnnual || 0),
@@ -739,7 +750,7 @@ export default function UKPensionCalculator() {
     ];
   }, [results]);
 
-  // Compose Total Net Value details for panel
+  // Compose Total Net Value details for panel (VALUE TO YOU ONLY - gift aid shown separately)
   const tnvDetails = useMemo(() => {
     if (!results) return [] as { label: string; before: number; after: number }[];
     const d = results.netValue.details;
@@ -748,15 +759,12 @@ export default function UKPensionCalculator() {
       { label: 'Salary Sacrifice Pension', before: d.before.pension, after: d.after.pension },
     ];
 
-    // Add other pensions gross value (what goes into pension)
+    // Add other pensions gross value (what goes into YOUR pension - value to you)
     if (d.after.otherPensionsGross > 0) {
-      rows.push({ label: 'Other Pensions (gross)', before: 0, after: d.after.otherPensionsGross });
+      rows.push({ label: 'Other Pensions (gross to pension)', before: 0, after: d.after.otherPensionsGross });
     }
 
-    // Add gift aid gross value (what charity receives)
-    if (d.after.giftAidGross > 0) {
-      rows.push({ label: 'Gift Aid (to charity)', before: 0, after: d.after.giftAidGross });
-    }
+    // Do NOT include gift aid gross here - it goes to charity, not to you
 
     rows.push(
       { label: 'P11D benefits', before: d.before.p11d, after: d.after.p11d },
@@ -781,30 +789,58 @@ export default function UKPensionCalculator() {
       { label: 'Income Tax', before: results.scenarios[0].incomeTax, after: results.scenarios[1].incomeTax },
       { label: 'Employee NIC', before: results.scenarios[0].employeeNIC, after: results.scenarios[1].employeeNIC },
       { label: 'Student Loan', before: results.scenarios[0].studentLoan || 0, after: results.scenarios[1].studentLoan || 0 },
-      { label: 'Salary Sacrifice Pension Funding', before: 0, after: results.sacrifice.totalPensionFunding },
+      { label: 'Salary Sacrifice Pension', before: 0, after: results.sacrifice.totalPensionFunding },
+      { label: '--- Take-Home from PAYE ---', before: results.scenarios[0].takeHome, after: results.scenarios[1].takeHome },
     ];
 
-    // Add other pensions if present
+    // Add other pensions/gift aid deductions if present
     if (results.otherPensions && results.otherPensions.net > 0) {
       rows.push({
-        label: `Other Pensions (net £${Math.round(results.otherPensions.net).toLocaleString()}, grossed to £${Math.round(results.otherPensions.gross).toLocaleString()})`,
-        value: results.otherPensions.gross
+        label: 'Other Pensions (net paid from pocket)',
+        before: 0,
+        after: -results.otherPensions.net  // Negative because it's leaving your pocket
       });
     }
 
-    // Add gift aid if present
     if (results.giftAid && results.giftAid.net > 0) {
       rows.push({
-        label: `Gift Aid (net £${Math.round(results.giftAid.net).toLocaleString()}, grossed to £${Math.round(results.giftAid.gross).toLocaleString()})`,
-        value: results.giftAid.gross
+        label: 'Gift Aid (net donated from pocket)',
+        before: 0,
+        after: -results.giftAid.net  // Negative because it's leaving your pocket
       });
     }
 
+    // Add additional relief if applicable
+    const totalAdditionalRelief = (results.otherPensions?.additionalRelief || 0) + (results.giftAid?.additionalRelief || 0);
+    if (totalAdditionalRelief > 0.01) {
+      rows.push({
+        label: 'Additional relief (claimable via SA)',
+        before: 0,
+        after: totalAdditionalRelief  // Positive because it comes back to you
+      });
+    }
+
+    // Calculate net pocket cash
+    const netPocketCashBefore = results.scenarios[0].takeHome;
+    const netPocketCashAfter = results.scenarios[1].takeHome
+      - (results.otherPensions?.net || 0)
+      - (results.giftAid?.net || 0)
+      + totalAdditionalRelief;
+
+    rows.push({ label: '=== Net Cash in Pocket ===', before: netPocketCashBefore, after: netPocketCashAfter });
+
+    // Add benefits
     rows.push(
-      { label: 'Free childcare value (eligibility-based)', before: results.childcare.before.freeChildcareAnnual || 0, after: results.childcare.after.freeChildcareAnnual || 0 },
-      { label: 'Total Take-Home (incl. CB & UC)', before: results.scenarios[0].totalTakeHome + (results.universalCredit?.before || 0), after: results.scenarios[1].totalTakeHome + (results.universalCredit?.after || 0) },
-      { label: 'Pocket resources total', before: (results.scenarios[0].totalTakeHome + (results.universalCredit?.before || 0)) + (results.childcare.before.freeChildcareAnnual || 0), after: (results.scenarios[1].totalTakeHome + (results.universalCredit?.after || 0)) + (results.childcare.after.freeChildcareAnnual || 0) },
+      { label: 'Child Benefit', before: results.scenarios[0].netChildBenefit || 0, after: results.scenarios[1].netChildBenefit || 0 },
+      { label: 'Universal Credit', before: results.universalCredit?.before || 0, after: results.universalCredit?.after || 0 },
+      { label: 'Free childcare (value)', before: results.childcare.before.freeChildcareAnnual || 0, after: results.childcare.after.freeChildcareAnnual || 0 },
     );
+
+    // Total pocket resources
+    const pocketResourcesBefore = netPocketCashBefore + (results.scenarios[0].netChildBenefit || 0) + (results.universalCredit?.before || 0) + (results.childcare.before.freeChildcareAnnual || 0);
+    const pocketResourcesAfter = netPocketCashAfter + (results.scenarios[1].netChildBenefit || 0) + (results.universalCredit?.after || 0) + (results.childcare.after.freeChildcareAnnual || 0);
+
+    rows.push({ label: '★ TOTAL POCKET RESOURCES ★', before: pocketResourcesBefore, after: pocketResourcesAfter });
 
     return rows;
   }, [results, additionalPAYEIncome, benefitsInKind]);
@@ -947,6 +983,7 @@ export default function UKPensionCalculator() {
                 headlineAfter={results.netValue.details.headline.after}
                 headlineDelta={results.netValue.details.headline.delta}
                 details={tnvDetails}
+                giftAidToCharity={results.giftAid?.gross || 0}
               />
             )}
 
