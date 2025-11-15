@@ -13,14 +13,17 @@ A completely hypothetical, not advice Salary Sacrifice calculator - a philosophi
 
 ## Quickstart 🚀
 
-Prereqs: Node.js 18+
+**Prerequisites:** Node.js 18+
 
 ```bash
+# 1. Install dependencies (required first time)
 npm install
+
+# 2. Start development server
 npm run dev
 ```
 
-Open http://localhost:5173
+Open http://localhost:5173 in your browser
 
 ---
 
@@ -50,11 +53,18 @@ npm run build
 
 ## Build 🏗️
 
+For production build:
+
 ```bash
+# Compiles TypeScript and builds optimized assets
 npm run build
 ```
 
-Outputs static assets to `dist/`.
+Output goes to `dist/` directory. You can preview the production build locally with:
+
+```bash
+npm run preview
+```
 
 ---
 
@@ -155,6 +165,22 @@ Optional cleanup if using Actions (not CLI):
 - Target pension total: choose “Target Total Pension” to back‑solve employee % (one‑click copy in UI).
 - Employer NI pass‑through defaults to 100%. If they aren’t giving it to you, lobby for it.
 - The Before/After chart includes cash, pension, EV, cycle, Child Benefit, UC, and free childcare for an honest “what you keep” picture.
+
+---
+
+## Troubleshooting 🔧
+
+**Build failing?** Make sure you've run `npm install` first.
+
+**Port 5173 already in use?** Vite will automatically try the next available port (5174, etc.)
+
+**TypeScript errors?** The build command includes `tsc -b` for type checking. Fix any type errors before building.
+
+**Dependencies issues?** Try:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
 ---
 
