@@ -35,6 +35,7 @@ import EMTRPanel from './calculator/panels/EMTRPanel';
 import CelebrationsPanel from './calculator/panels/CelebrationsPanel';
 import NudgesPanel from './calculator/panels/NudgesPanel';
 import TalesPanel from './calculator/panels/TalesPanel';
+import UniversalCreditPanel from './calculator/panels/UniversalCreditPanel';
 
 type Region = 'englandWalesNI' | 'scotland';
 
@@ -224,12 +225,15 @@ export default function UKPensionCalculator() {
   };
 
   const estimateUniversalCredit = (netIncomeAnnual: number, childcareElementMonthly = 0) => {
-    if (parseNumber(householdCapital) > 16000) return 0;
-    let maxAwardMonthly = hasPartner ? TAX_DATA.universalCredit.standardAllowance.couple : TAX_DATA.universalCredit.standardAllowance.single;
-    maxAwardMonthly += numberOfChildren * TAX_DATA.universalCredit.childElement;
-    if (wantsHousingElement && parseNumber(housingAllowance) > 0) {
-      maxAwardMonthly += parseNumber(housingAllowance);
-    }
+    if (parseNumber(householdCapital) > 16000) return { award: 0, breakdown: null };
+    
+    const standardAllowance = hasPartner ? TAX_DATA.universalCredit.standardAllowance.couple : TAX_DATA.universalCredit.standardAllowance.single;
+    const childElement = TAX_DATA.universalCredit.childElement;
+    let maxAwardMonthly = standardAllowance;
+    maxAwardMonthly += numberOfChildren * childElement;
+    
+    const housingElementMonthly = (wantsHousingElement && parseNumber(housingAllowance) > 0) ? parseNumber(housingAllowance) : 0;
+    maxAwardMonthly += housingElementMonthly;
     // Add childcare element when using UC childcare
     maxAwardMonthly += childcareElementMonthly;
 
@@ -239,7 +243,24 @@ export default function UKPensionCalculator() {
     const countedEarnings = Math.max(0, totalHouseholdIncomeMonthly - workAllowanceMonthly);
     const reduction = countedEarnings * TAX_DATA.universalCredit.taper;
     const monthlyAward = Math.max(0, maxAwardMonthly - reduction);
-    return monthlyAward * 12;
+    
+    return {
+      award: monthlyAward * 12,
+      breakdown: {
+        maxAward: maxAwardMonthly,
+        standardAllowance,
+        childElement,
+        numberOfChildren,
+        housingElement: housingElementMonthly,
+        childcareElement: childcareElementMonthly,
+        workAllowance: workAllowanceMonthly,
+        householdNetIncome: totalHouseholdIncomeMonthly,
+        countedEarnings,
+        taperRate: TAX_DATA.universalCredit.taper,
+        reduction,
+        finalAward: monthlyAward
+      }
+    };
   };
 
   // Helper: childcare support (simplified to only free childcare at £100k cap)
@@ -352,9 +373,14 @@ export default function UKPensionCalculator() {
 
     // Universal Credit (explicitly ignore P11D and non‑sac PAYE via totalTakeHomeForUC)
     let ucBefore = 0, ucAfter = 0;
+    let ucBreakdownBefore = null, ucBreakdownAfter = null;
     if (universalCreditEnabled && parseNumber(householdCapital) <= 16000) {
-      ucBefore = estimateUniversalCredit(scenarios[0].totalTakeHomeForUC);
-      ucAfter = estimateUniversalCredit(scenarios[1].totalTakeHomeForUC);
+      const ucResultBefore = estimateUniversalCredit(scenarios[0].totalTakeHomeForUC);
+      const ucResultAfter = estimateUniversalCredit(scenarios[1].totalTakeHomeForUC);
+      ucBefore = ucResultBefore.award;
+      ucAfter = ucResultAfter.award;
+      ucBreakdownBefore = ucResultBefore.breakdown;
+      ucBreakdownAfter = ucResultAfter.breakdown;
     }
 
     // Pension AA (strictly exceed; include epsilon). Include carry-forward
@@ -443,7 +469,7 @@ export default function UKPensionCalculator() {
 
       const takeHomeSim = earningsSim - incomeTaxSim - employeeNICSim - studentLoanSim;
       const finalTakeHomeSim = takeHomeSim + netChildBenefitSim;
-      const ucSim = universalCreditEnabled ? estimateUniversalCredit(finalTakeHomeSim) : 0;
+      const ucSim = universalCreditEnabled ? estimateUniversalCredit(finalTakeHomeSim).award : 0;
       return finalTakeHomeSim + ucSim;
     };
 
@@ -562,7 +588,7 @@ export default function UKPensionCalculator() {
         before: childcareBefore,
         after: childcareAfter,
       },
-      universalCredit: { before: ucBefore, after: ucAfter },
+      universalCredit: { before: ucBefore, after: ucAfter, breakdownBefore: ucBreakdownBefore, breakdownAfter: ucBreakdownAfter },
       nmwCompliant,
       marginalRates: { employment: mtrEmployment, nonSacPAYE: mtrNonSac },
       // Back-compatible summary
@@ -710,7 +736,7 @@ export default function UKPensionCalculator() {
     const list: { icon: React.ReactNode; text: string }[] = [];
     if (!results) return list;
     // UC suggestion: estimate behind the scenes even if toggle is off
-    const ucPotential = estimateUniversalCredit(results.scenarios[1].totalTakeHome);
+    const ucPotential = estimateUniversalCredit(results.scenarios[1].totalTakeHome).award;
     if (!universalCreditEnabled && ucPotential > 0) {
       list.push({ icon: <HelpCircle className="text-info" size={16} />, text: 'Have you checked if you are eligible for UC based on this? (Not advice)' });
     }
@@ -1039,6 +1065,21 @@ export default function UKPensionCalculator() {
               <>
                 {/* Detailed Breakdown */}
                 <DetailedBreakdownPanel rows={breakdownRows} />
+                
+                {/* Universal Credit Breakdown Panels */}
+                {universalCreditEnabled && parseNumber(householdCapital) <= 16000 && results.universalCredit?.breakdownBefore && results.universalCredit?.breakdownAfter && (
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <UniversalCreditPanel
+                      scenario="before"
+                      {...results.universalCredit.breakdownBefore}
+                    />
+                    <UniversalCreditPanel
+                      scenario="after"
+                      {...results.universalCredit.breakdownAfter}
+                    />
+                  </div>
+                )}
+                
                 {/* Extra contextual notices previously in the breakdown */}
                 {p11dCausesPA && (
                   <div className="p-2 rounded border border-info/20 bg-info/10 text-info text-xs">

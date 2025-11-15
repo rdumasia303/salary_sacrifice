@@ -29,8 +29,8 @@
     "workAllowanceWithHousing": 411,
     "workAllowanceNoHousing": 684,
     "taper": 0.55,
-    "childElement": 315,
-    "standardAllowance": { "single": 292.11, "couple": 458.51 },
+    "childElement": 292.81,
+    "standardAllowance": { "single": 400.14, "couple": 628.10 },
     "period": "monthly"
   },
   "pension": {

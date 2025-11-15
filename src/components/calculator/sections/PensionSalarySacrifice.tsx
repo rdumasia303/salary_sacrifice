@@ -26,9 +26,9 @@ export default function PensionSalarySacrifice(props: PensionSalarySacrificeProp
       <div className="grid md:grid-cols-2 gap-5">
         <div className="form-control">
           <label className="label"><span className="label-text">Sacrifice Type</span></label>
-          <select value={sacrificeType} onChange={(e) => setSacrificeType(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20 text-white">
-            <option value="percent" className="bg-gray-800 text-white">Percentage (%)</option>
-            <option value="target" className="bg-gray-800 text-white">Total amount desired into pension plan</option>
+          <select value={sacrificeType} onChange={(e) => setSacrificeType(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20">
+            <option value="percent">Percentage (%)</option>
+            <option value="target">Total amount desired into pension plan</option>
           </select>
         </div>
         <div>

@@ -99,6 +99,15 @@ html, body, #root {
   box-shadow: 0 0 0 2px rgba(124,58,237,0.35);
 }
 
+/* Fix dropdown text visibility */
+.select {
+  color: white !important;
+}
+.select option {
+  background-color: rgb(31, 41, 55) !important;
+  color: white !important;
+}
+
 /* Accent corners */
 .corner-accent {
   position: relative;

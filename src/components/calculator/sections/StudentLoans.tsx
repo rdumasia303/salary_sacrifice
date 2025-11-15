@@ -18,11 +18,11 @@ export default function StudentLoans({ studentUGPlan, setStudentUGPlan, hasPGL, 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="form-control">
           <label className="label"><span className="label-text">Undergraduate plan</span></label>
-          <select value={studentUGPlan} onChange={(e) => setStudentUGPlan(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20 text-white">
-            <option value="none" className="bg-gray-800 text-white">None</option>
-            <option value="plan1" className="bg-gray-800 text-white">Plan 1 (older loans)</option>
-            <option value="plan2" className="bg-gray-800 text-white">Plan 2 (England/Wales)</option>
-            <option value="plan4" className="bg-gray-800 text-white">Plan 4 (Scotland)</option>
+          <select value={studentUGPlan} onChange={(e) => setStudentUGPlan(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20">
+            <option value="none">None</option>
+            <option value="plan1">Plan 1 (older loans)</option>
+            <option value="plan2">Plan 2 (England/Wales)</option>
+            <option value="plan4">Plan 4 (Scotland)</option>
           </select>
         </div>
         <div className="form-control justify-end">
