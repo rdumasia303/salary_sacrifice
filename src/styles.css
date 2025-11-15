@@ -6,6 +6,10 @@
 
 html, body, #root {
   height: 100%;
+  /* Safari smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent horizontal scroll on Safari */
+  overflow-x: hidden;
 }
 
 /* Aurora plus subtle animated tech grid */
@@ -122,7 +126,7 @@ html, body, #root {
 .corner-accent::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
 .corner-accent::after { bottom: 8px; right: 8px; border-left: none; border-top: none; }
 
-/* Safari animation optimizations */
+/* Safari-specific optimizations and fixes */
 @supports (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px)) {
   /* Force GPU acceleration for animated elements in Safari */
   .animate-aurora,
@@ -146,6 +150,57 @@ html, body, #root {
   .animate-fadeIn {
     will-change: opacity;
   }
+
+  /* Safari backdrop-filter fix - add explicit webkit prefix */
+  .glass,
+  .glass-deep,
+  .card {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Safari flexbox fixes */
+.flex {
+  /* Fix Safari flex shrink issues */
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Safari grid fixes */
+.grid {
+  /* Ensure grid items don't overflow in Safari */
+  min-width: 0;
+}
+
+/* Safari-specific input fixes */
+@supports (-webkit-appearance: none) {
+  /* Fix Safari input rendering */
+  .input,
+  .select {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Fix Safari select arrow */
+  .select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  /* Fix Safari range slider */
+  .range {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
 
 /* Respect user's motion preferences */
@@ -162,5 +217,44 @@ html, body, #root {
   .animate-glowpulse,
   .animate-fadeIn {
     animation: none !important;
+  }
+}
+
+/* Additional Safari-specific fixes for iOS devices */
+@supports (-webkit-touch-callout: none) {
+  /* Fix iOS Safari 100vh issue */
+  html {
+    height: -webkit-fill-available;
+  }
+
+  body, #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Fix Safari font rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Fix Safari position fixed with backdrop-filter */
+  .glass::after,
+  .glass-deep::after {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* Safari desktop-specific fixes */
+@supports (not (-webkit-touch-callout: none)) and (-webkit-appearance: none) {
+  /* Desktop Safari backdrop-filter performance */
+  .glass,
+  .glass-deep,
+  .card {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
   }
 }
