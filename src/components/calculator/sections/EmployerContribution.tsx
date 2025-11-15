@@ -20,9 +20,9 @@ export default function EmployerContribution(props: EmployerContributionProps) {
       <div className="grid md:grid-cols-2 gap-5">
         <div className="form-control">
           <label className="label"><span className="label-text">Base Contribution Type</span></label>
-          <select value={employerContribType} onChange={(e) => setEmployerContribType(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20">
-            <option value="percent">Percentage of Salary</option>
-            <option value="fixed">Fixed Amount</option>
+          <select value={employerContribType} onChange={(e) => setEmployerContribType(e.target.value as any)} className="select select-bordered w-full bg-white/5 border-white/20 text-white">
+            <option value="percent" className="bg-gray-800 text-white">Percentage of Salary</option>
+            <option value="fixed" className="bg-gray-800 text-white">Fixed Amount</option>
           </select>
         </div>
         <div>

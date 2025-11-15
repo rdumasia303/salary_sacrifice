@@ -4,7 +4,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from 'recha
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6'];
 
 interface PensionPieChartProps {
-  data: { name: string; value: number }[];
+  data: { name: string; value: number; color?: string }[];
 }
 
 export default function PensionPieChart({ data }: PensionPieChartProps) {
@@ -19,8 +19,8 @@ export default function PensionPieChart({ data }: PensionPieChartProps) {
           <ResponsiveContainer>
             <PieChart>
               <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} label>
-                {data.map((_, i) => (
-                  <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                {data.map((item, i) => (
+                  <Cell key={`cell-${i}`} fill={item.color || COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip wrapperStyle={{ background: 'transparent', border: 'none' }} labelStyle={{ color: '#e5e7eb' }} itemStyle={{ color: '#e5e7eb' }} contentStyle={{ background: '#0c1219', border: '1px solid #1f2a37' }} />
