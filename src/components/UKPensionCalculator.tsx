@@ -491,6 +491,14 @@ export default function UKPensionCalculator() {
         totalEmployerContrib,
         totalPensionFunding,
       },
+      otherPensions: {
+        net: parseNumber(otherPensions),
+        gross: otherPensionsGross,
+      },
+      giftAid: {
+        net: parseNumber(giftAid),
+        gross: giftAidGross,
+      },
       schemes: {
         ev: { enabled: evEnabled, gross: evGross, net: evNet, employerPassthrough: evPassthrough },
         cycle: { enabled: cycleEnabled, gross: cycleGross, net: cycleNet, employerPassthrough: cyclePassthrough },
@@ -710,18 +718,40 @@ export default function UKPensionCalculator() {
   // Build rows for Detailed Breakdown panel
   const breakdownRows = useMemo(() => {
     if (!results) return [] as { label: string; before?: number; after?: number; value?: number }[];
-    return [
+
+    const rows: { label: string; before?: number; after?: number; value?: number }[] = [
       { label: 'Gross Pay', before: results.scenarios[0].earnings, after: results.scenarios[1].earnings },
       { label: 'Additional PAYE Income', value: parseNumber(additionalPAYEIncome) },
       { label: 'Benefits in Kind (P11D)', value: parseNumber(benefitsInKind) },
       { label: 'Income Tax', before: results.scenarios[0].incomeTax, after: results.scenarios[1].incomeTax },
       { label: 'Employee NIC', before: results.scenarios[0].employeeNIC, after: results.scenarios[1].employeeNIC },
       { label: 'Student Loan', before: results.scenarios[0].studentLoan || 0, after: results.scenarios[1].studentLoan || 0 },
-      { label: 'Total Pension Funding', before: 0, after: results.sacrifice.totalPensionFunding },
+      { label: 'Salary Sacrifice Pension Funding', before: 0, after: results.sacrifice.totalPensionFunding },
+    ];
+
+    // Add other pensions if present
+    if (results.otherPensions && results.otherPensions.net > 0) {
+      rows.push({
+        label: `Other Pensions (net £${Math.round(results.otherPensions.net).toLocaleString()}, grossed to £${Math.round(results.otherPensions.gross).toLocaleString()})`,
+        value: results.otherPensions.gross
+      });
+    }
+
+    // Add gift aid if present
+    if (results.giftAid && results.giftAid.net > 0) {
+      rows.push({
+        label: `Gift Aid (net £${Math.round(results.giftAid.net).toLocaleString()}, grossed to £${Math.round(results.giftAid.gross).toLocaleString()})`,
+        value: results.giftAid.gross
+      });
+    }
+
+    rows.push(
       { label: 'Free childcare value (eligibility-based)', before: results.childcare.before.freeChildcareAnnual || 0, after: results.childcare.after.freeChildcareAnnual || 0 },
       { label: 'Total Take-Home (incl. CB & UC)', before: results.scenarios[0].totalTakeHome + (results.universalCredit?.before || 0), after: results.scenarios[1].totalTakeHome + (results.universalCredit?.after || 0) },
       { label: 'Pocket resources total', before: (results.scenarios[0].totalTakeHome + (results.universalCredit?.before || 0)) + (results.childcare.before.freeChildcareAnnual || 0), after: (results.scenarios[1].totalTakeHome + (results.universalCredit?.after || 0)) + (results.childcare.after.freeChildcareAnnual || 0) },
-    ];
+    );
+
+    return rows;
   }, [results, additionalPAYEIncome, benefitsInKind]);
 
   return (
@@ -906,6 +936,18 @@ export default function UKPensionCalculator() {
                     ) : null}
                   </div>
                 )}
+                {results.giftAid && results.giftAid.net > 0 && (() => {
+                  const marginalRate = results.marginalRates?.employment || 0;
+                  const additionalReliefRate = Math.max(0, marginalRate - 20);
+                  const additionalRelief = results.giftAid.gross * (additionalReliefRate / 100);
+                  return additionalRelief > 0.01 ? (
+                    <div className="p-3 rounded border border-success/30 bg-success/10 text-success text-xs space-y-1">
+                      <div className="font-semibold">Gift Aid Tax Relief:</div>
+                      <div>You donated <strong>{formatCurrency(results.giftAid.net)}</strong> (charity received <strong>{formatCurrency(results.giftAid.gross)}</strong> with basic rate relief).</div>
+                      <div>As a {marginalRate === 40 ? 'higher' : 'additional'} rate taxpayer, you can claim back <strong>{formatCurrency(additionalRelief)}</strong> ({additionalReliefRate}% of gross) via self-assessment.</div>
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Pension Summary */}
                 <PensionSummaryPanel
@@ -913,7 +955,11 @@ export default function UKPensionCalculator() {
                   employerBase={results.sacrifice.employerBase}
                   employerPassthrough={results.sacrifice.employerPassthrough}
                   totalFunding={results.sacrifice.totalPensionFunding}
+                  otherPensionsNet={results.otherPensions?.net || 0}
+                  otherPensionsGross={results.otherPensions?.gross || 0}
+                  totalContribs={results.pension.totalContribs}
                   remainingAllowance={results.pension.remaining}
+                  marginalRate={results.marginalRates?.employment || 0}
                 />
 
                 {/* Effective Marginal Tax Rate */}
